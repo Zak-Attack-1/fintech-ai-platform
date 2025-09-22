@@ -1,0 +1,14 @@
+2025-09-21 23:48:29 | INFO | src.data_ingestion.base_ingestion:run_ingestion:139 | Starting ingestion job: sp500_stock_ingestion
+2025-09-21 23:48:29 | INFO | src.data_ingestion.base_ingestion:run_ingestion:142 | Extracting data...
+2025-09-21 23:48:29 | INFO | src.data_ingestion.stock_ingestion:extract_data:119 | Extracting data for 5 tickers from 2025-08-22 to 2025-09-21
+2025-09-21 23:48:29 | INFO | src.data_ingestion.stock_ingestion:extract_data:123 | Attempting bulk download...
+2025-09-21 23:48:35 | INFO | src.data_ingestion.stock_ingestion:extract_data:136 | Bulk download successful, processing data...
+2025-09-21 23:48:35 | INFO | src.data_ingestion.base_ingestion:run_ingestion:145 | Extracted 0 records
+2025-09-21 23:48:35 | WARNING | src.data_ingestion.base_ingestion:run_ingestion:148 | No data extracted, skipping transform and load
+2025-09-21 23:51:27 | ERROR | src.models.database:get_session:165 | Database session error: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum data_source: "multiple"
+LINE 1: ..._message) VALUES ('super_robust_stock_ingestion', 'multiple'...
+                                                             ^
+
+[SQL: INSERT INTO ingestion_logs (job_name, data_source, start_time, end_time, status, records_processed, records_inserted, records_updated, records_failed, error_message) VALUES (%(job_name)s, %(data_source)s, %(start_time)s, %(end_time)s, %(status)s, %(records_processed)s, %(records_inserted)s, %(records_updated)s, %(records_failed)s, %(error_message)s) RETURNING ingestion_logs.id]
+[parameters: {'job_name': 'super_robust_stock_ingestion', 'data_source': 'multiple', 'start_time': datetime.datetime(2025, 9, 21, 22, 51, 27, 255252), 'end_time': None, 'status': 'running', 'records_processed': 0, 'records_inserted': 0, 'records_updated': 0, 'records_failed': 0, 'error_message': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)

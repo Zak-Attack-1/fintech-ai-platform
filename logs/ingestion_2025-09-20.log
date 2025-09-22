@@ -1,0 +1,34 @@
+2025-09-20 21:18:57 | ERROR | src.models.database:get_session:165 | Database session error: (psycopg2.errors.UndefinedColumn) column ingestion_logs.extra_data does not exist
+LINE 1: ...ogs.records_failed, ingestion_logs.error_message, ingestion_...
+                                                             ^
+
+[SQL: SELECT ingestion_logs.id, ingestion_logs.job_name, ingestion_logs.data_source, ingestion_logs.start_time, ingestion_logs.end_time, ingestion_logs.status, ingestion_logs.records_processed, ingestion_logs.records_inserted, ingestion_logs.records_updated, ingestion_logs.records_failed, ingestion_logs.error_message, ingestion_logs.extra_data 
+FROM ingestion_logs 
+WHERE ingestion_logs.id = %(pk_1)s]
+[parameters: {'pk_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2025-09-20 21:26:36 | INFO | src.data_ingestion.base_ingestion:run_ingestion:139 | Starting ingestion job: sp500_stock_ingestion
+2025-09-20 21:26:36 | INFO | src.data_ingestion.base_ingestion:run_ingestion:142 | Extracting data...
+2025-09-20 21:26:36 | INFO | src.data_ingestion.stock_ingestion:extract_data:119 | Extracting data for 5 tickers from 2025-08-21 to 2025-09-20
+2025-09-20 21:26:37 | WARNING | src.data_ingestion.stock_ingestion:extract_data:133 | No data found for AAPL
+2025-09-20 21:26:37 | WARNING | src.data_ingestion.stock_ingestion:extract_data:133 | No data found for MSFT
+2025-09-20 21:26:39 | WARNING | src.data_ingestion.stock_ingestion:extract_data:133 | No data found for GOOGL
+2025-09-20 21:26:40 | WARNING | src.data_ingestion.stock_ingestion:extract_data:133 | No data found for AMZN
+2025-09-20 21:26:40 | WARNING | src.data_ingestion.stock_ingestion:extract_data:133 | No data found for NVDA
+2025-09-20 21:26:40 | WARNING | src.data_ingestion.stock_ingestion:extract_data:177 | Failed to extract data for 5 tickers: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA']...
+2025-09-20 21:26:41 | ERROR | src.data_ingestion.stock_ingestion:extract_data:180 | No data extracted for any ticker
+2025-09-20 21:26:41 | INFO | src.data_ingestion.base_ingestion:run_ingestion:145 | Extracted 0 records
+2025-09-20 21:26:41 | WARNING | src.data_ingestion.base_ingestion:run_ingestion:148 | No data extracted, skipping transform and load
+2025-09-20 21:41:37 | INFO | src.data_ingestion.base_ingestion:run_ingestion:139 | Starting ingestion job: sp500_stock_ingestion
+2025-09-20 21:41:37 | INFO | src.data_ingestion.base_ingestion:run_ingestion:142 | Extracting data...
+2025-09-20 21:41:37 | INFO | src.data_ingestion.stock_ingestion:extract_data:119 | Extracting data for 5 tickers from 2025-08-21 to 2025-09-20
+2025-09-20 21:41:37 | INFO | src.data_ingestion.stock_ingestion:extract_data:123 | Attempting bulk download...
+2025-09-20 21:41:40 | WARNING | src.data_ingestion.stock_ingestion:extract_data:241 | ❌ Failed to extract data for AAPL after 3 attempts
+2025-09-20 21:41:43 | WARNING | src.data_ingestion.stock_ingestion:extract_data:241 | ❌ Failed to extract data for MSFT after 3 attempts
+2025-09-20 21:41:45 | WARNING | src.data_ingestion.stock_ingestion:extract_data:241 | ❌ Failed to extract data for GOOGL after 3 attempts
+2025-09-20 21:41:46 | WARNING | src.data_ingestion.stock_ingestion:extract_data:241 | ❌ Failed to extract data for AMZN after 3 attempts
+2025-09-20 21:41:48 | WARNING | src.data_ingestion.stock_ingestion:extract_data:241 | ❌ Failed to extract data for NVDA after 3 attempts
+2025-09-20 21:41:48 | WARNING | src.data_ingestion.stock_ingestion:extract_data:247 | Failed to extract data for 5 tickers: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA']...
+2025-09-20 21:41:48 | ERROR | src.data_ingestion.stock_ingestion:extract_data:250 | No data extracted for any ticker
+2025-09-20 21:41:48 | INFO | src.data_ingestion.base_ingestion:run_ingestion:145 | Extracted 0 records
+2025-09-20 21:41:48 | WARNING | src.data_ingestion.base_ingestion:run_ingestion:148 | No data extracted, skipping transform and load

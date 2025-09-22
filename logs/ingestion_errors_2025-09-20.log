@@ -1,0 +1,11 @@
+2025-09-20 21:18:57 | ERROR | src.models.database:get_session:165 | Database session error: (psycopg2.errors.UndefinedColumn) column ingestion_logs.extra_data does not exist
+LINE 1: ...ogs.records_failed, ingestion_logs.error_message, ingestion_...
+                                                             ^
+
+[SQL: SELECT ingestion_logs.id, ingestion_logs.job_name, ingestion_logs.data_source, ingestion_logs.start_time, ingestion_logs.end_time, ingestion_logs.status, ingestion_logs.records_processed, ingestion_logs.records_inserted, ingestion_logs.records_updated, ingestion_logs.records_failed, ingestion_logs.error_message, ingestion_logs.extra_data 
+FROM ingestion_logs 
+WHERE ingestion_logs.id = %(pk_1)s]
+[parameters: {'pk_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2025-09-20 21:26:41 | ERROR | src.data_ingestion.stock_ingestion:extract_data:180 | No data extracted for any ticker
+2025-09-20 21:41:48 | ERROR | src.data_ingestion.stock_ingestion:extract_data:250 | No data extracted for any ticker

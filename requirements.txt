@@ -1,0 +1,33 @@
+# Database & ORM
+psycopg2-binary==2.9.7
+sqlalchemy==2.0.21
+alembic==1.12.0
+
+# Data Processing
+pandas==2.1.1
+numpy==1.24.3
+yfinance==0.2.18
+pandas-datareader==0.10.0
+requests==2.31.0
+
+# AI/ML (CPU-optimized)
+transformers==4.33.2
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.0.1+cpu
+sentence-transformers==2.2.2
+chromadb==0.4.22
+
+# Dashboard
+streamlit==1.26.0
+plotly==5.16.1
+
+# Utilities
+python-dotenv==1.0.0
+loguru==0.7.2
+pydantic==2.3.0
+pydantic-settings==2.0.3
+
+# Development
+pytest==7.4.2
+black==23.7.0
+flake8==6.0.0 

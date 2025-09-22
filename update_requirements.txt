@@ -1,0 +1,39 @@
+# Database & ORM
+psycopg2-binary==2.9.7
+sqlalchemy==2.0.21
+alembic==1.12.0
+
+# Data Processing
+pandas==2.1.1
+numpy==1.24.3
+
+# Financial Data - Updated with alternatives
+yfinance==0.2.54  # Latest version with fixes
+pandas-datareader==0.10.0
+alpha-vantage==2.3.1  # Alternative API
+requests==2.31.0
+
+# Rate limiting and caching
+requests-cache==1.1.1
+ratelimit==2.2.1
+
+# AI/ML (CPU-optimized)
+transformers==4.33.2
+torch==2.0.1+cpu --extra-index-url https://download.pytorch.org/whl/cpu
+sentence-transformers==2.2.2
+chromadb==0.4.10
+
+# Dashboard
+streamlit==1.26.0
+plotly==5.16.1
+
+# Utilities
+python-dotenv==1.0.0
+loguru==0.7.2
+pydantic==2.3.0
+pydantic-settings==2.0.3
+
+# Development
+pytest==7.4.2
+black==23.7.0
+flake8==6.0.0
