@@ -1,0 +1,47 @@
+version: 2
+
+models:
+  - name: stg_stock_prices
+    description: "Cleaned and validated stock price data"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - ticker
+            - date
+    columns:
+      - name: ticker
+        description: "Stock ticker symbol"
+        tests:
+          - not_null
+          - dbt_utils.not_empty_string
+      - name: date
+        description: "Trading date"
+        tests:
+          - not_null
+          - dbt_utils.not_future_date
+      - name: close_price
+        description: "Closing price"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: false
+      - name: volume
+        description: "Trading volume"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+  - name: stg_economic_indicators
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - series_id
+            - date
+
+  - name: stg_crypto_prices
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - symbol
+            - date
