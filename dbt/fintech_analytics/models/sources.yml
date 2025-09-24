@@ -3,6 +3,7 @@ version: 2
 sources:
   - name: raw_financial_data
     description: "Raw financial data from various APIs"
+    schema: public  # Add this line to specify the actual schema
     tables:
       - name: stock_prices
         description: "Daily stock price data from multiple sources"
