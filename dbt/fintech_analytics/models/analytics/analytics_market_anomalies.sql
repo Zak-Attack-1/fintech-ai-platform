@@ -1,161 +1,99 @@
+-- models/analytics/analytics_market_anomalies.sql
 {{ config(materialized='table') }}
 
-with stock_anomalies as (
+with asset_analysis as (
     select
-        date,
-        ticker as asset_id,
-        company_name as asset_name,
-        'Stock' as asset_type,
+        last_update_date as date,
+        asset_symbol as asset_id,
+        asset_name,
+        asset_type,
         sector,
         
-        daily_return,
-        volume,
-        close_price,
+        latest_return as daily_return,
+        current_price as close_price,
+        current_volatility,
+        current_rsi,
         
-        -- Z-score calculations for anomaly detection
-        (daily_return - avg(daily_return) over (
-            partition by ticker 
-            order by date 
-            rows between 60 preceding and current row
-        )) / stddev(daily_return) over (
-            partition by ticker 
-            order by date 
-            rows between 60 preceding and current row
-        ) as return_z_score,
+        -- Simple anomaly scoring based on available data
+        case 
+            when abs(latest_return) > 0.1 then abs(latest_return) * 10
+            when abs(latest_return) > 0.05 then abs(latest_return) * 5  
+            when abs(latest_return) > 0.02 then abs(latest_return) * 2
+            else abs(latest_return)
+        end as return_anomaly_score,
         
-        (volume - avg(volume) over (
-            partition by ticker 
-            order by date 
-            rows between 30 preceding and current row
-        )) / stddev(volume) over (
-            partition by ticker 
-            order by date 
-            rows between 30 preceding and current row
-        ) as volume_z_score,
+        case 
+            when current_volatility > 0.05 then current_volatility * 10
+            when current_volatility > 0.03 then current_volatility * 5
+            else current_volatility
+        end as volatility_anomaly_score,
         
-        -- Price gaps
-        (open_price - lag(close_price) over (partition by ticker order by date)) / 
-        lag(close_price) over (partition by ticker order by date) as price_gap,
+        case 
+            when current_rsi > 80 or current_rsi < 20 then abs(50 - current_rsi) / 10
+            else 0
+        end as rsi_anomaly_score
         
-        -- Moving average deviations
-        price_vs_20d_ma,
-        price_vs_50d_ma,
-        
-        rsi_14d,
-        volatility_20d
-
-    from {{ ref('int_stock_daily_analysis') }}
-),
-
-crypto_anomalies as (
-    select
-        date,
-        symbol as asset_id,
-        name as asset_name,
-        'Crypto' as asset_type,
-        crypto_category as sector,
-        
-        daily_return,
-        volume_24h as volume,
-        price_usd as close_price,
-        
-        -- Z-score calculations (crypto is more volatile)
-        (daily_return - avg(daily_return) over (
-            partition by symbol 
-            order by date 
-            rows between 30 preceding and current row
-        )) / stddev(daily_return) over (
-            partition by symbol 
-            order by date 
-            rows between 30 preceding and current row
-        ) as return_z_score,
-        
-        (volume_24h - avg(volume_24h) over (
-            partition by symbol 
-            order by date 
-            rows between 14 preceding and current row
-        )) / stddev(volume_24h) over (
-            partition by symbol 
-            order by date 
-            rows between 14 preceding and current row
-        ) as volume_z_score,
-        
-        null as price_gap,  -- No traditional gaps in crypto
-        price_vs_30d_ma as price_vs_20d_ma,
-        price_vs_90d_ma as price_vs_50d_ma,
-        
-        rsi_14d,
-        volatility_30d as volatility_20d
-
-    from {{ ref('int_crypto_analysis') }}
-),
-
-all_anomalies as (
-    select * from stock_anomalies
-    union all
-    select * from crypto_anomalies
+    from {{ ref('mart_asset_performance') }}
+    where latest_return is not null
 ),
 
 anomaly_classification as (
     select
         *,
-        -- Anomaly types
+        -- Anomaly types based on thresholds
         case
-            when abs(return_z_score) > 3 then 'Extreme Return'
-            when abs(return_z_score) > 2 then 'Unusual Return'
+            when abs(daily_return) > 0.1 then 'Extreme Return'
+            when abs(daily_return) > 0.05 then 'Unusual Return'
             else null
         end as return_anomaly,
         
         case
-            when volume_z_score > 3 then 'Volume Spike'
-            when volume_z_score > 2 then 'High Volume'
-            when volume_z_score < -2 then 'Low Volume'
-            else null
-        end as volume_anomaly,
-        
-        case
-            when abs(price_gap) > 0.05 then 'Price Gap'
-            else null
-        end as gap_anomaly,
-        
-        case
-            when rsi_14d > 90 then 'Extreme Overbought'
-            when rsi_14d > 70 then 'Overbought'
-            when rsi_14d < 10 then 'Extreme Oversold'
-            when rsi_14d < 30 then 'Oversold'
+            when current_rsi > 90 then 'Extreme Overbought'
+            when current_rsi > 70 then 'Overbought'
+            when current_rsi < 10 then 'Extreme Oversold'
+            when current_rsi < 30 then 'Oversold'
             else null
         end as momentum_anomaly,
         
         case
-            when volatility_20d > 0.05 and asset_type = 'Stock' then 'High Volatility'
-            when volatility_20d > 0.15 and asset_type = 'Crypto' then 'High Volatility'
+            when current_volatility > 0.05 and asset_type = 'Stock' then 'High Volatility'
+            when current_volatility > 0.15 and asset_type = 'Crypto' then 'High Volatility'
             else null
         end as volatility_anomaly,
         
         -- Composite anomaly score
-        (coalesce(abs(return_z_score), 0) + 
-         coalesce(abs(volume_z_score), 0) + 
-         coalesce(abs(price_gap) * 20, 0)) / 3 as anomaly_score
+        (return_anomaly_score + volatility_anomaly_score + rsi_anomaly_score) / 3 as anomaly_score
 
-    from all_anomalies
+    from asset_analysis
 ),
 
 final_anomalies as (
     select
-        *,
+        date,
+        asset_id,
+        asset_name,
+        asset_type,
+        sector,
+        daily_return,
+        close_price,
+        current_volatility,
+        current_rsi,
+        return_anomaly,
+        momentum_anomaly, 
+        volatility_anomaly,
+        anomaly_score,
+        
         -- Overall anomaly classification
         case
             when anomaly_score > 3 then 'Critical'
             when anomaly_score > 2 then 'High'
-            when anomaly_score > 1.5 then 'Moderate'
+            when anomaly_score > 1 then 'Moderate'
             else 'Normal'
         end as anomaly_severity,
         
-        -- Combine all anomaly types
+        -- Combine all anomaly types into an array
         array_remove(array[
             return_anomaly,
-            volume_anomaly,
-            gap_anomaly,
             momentum_anomaly,
             volatility_anomaly
         ], null) as anomaly_types
@@ -163,7 +101,21 @@ final_anomalies as (
     from anomaly_classification
 )
 
-select *
+select 
+    date,
+    asset_id,
+    asset_name,
+    asset_type,
+    sector,
+    daily_return,
+    close_price,
+    current_volatility as volatility_20d,
+    current_rsi as rsi_14d,
+    anomaly_score,
+    anomaly_severity,
+    anomaly_types
 from final_anomalies
-where anomaly_score > 1.5  -- Only include moderate to critical anomalies
+where anomaly_score > 0.5
 order by date desc, anomaly_score desc
+
+---

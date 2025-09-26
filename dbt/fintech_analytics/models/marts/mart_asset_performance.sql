@@ -1,6 +1,25 @@
 {{ config(materialized='table') }}
 
-with stock_performance as (
+-- First, calculate market averages to avoid nested window functions
+with market_daily_returns as (
+    select 
+        date,
+        avg(daily_return) as market_avg_return
+    from {{ ref('int_stock_daily_analysis') }}
+    where daily_return is not null
+    group by date
+),
+
+stock_with_market as (
+    select 
+        s.*,
+        m.market_avg_return
+    from {{ ref('int_stock_daily_analysis') }} s
+    left join market_daily_returns m on s.date = m.date
+    where s.daily_return is not null
+),
+
+stock_performance as (
     select
         ticker as asset_symbol,
         company_name as asset_name,
@@ -36,12 +55,12 @@ with stock_performance as (
         -- Risk metrics
         min(drawdown_1yr) over (partition by ticker) as max_drawdown,
         
-        -- Simple beta calculation (correlation with market average)
-        corr(daily_return, avg(daily_return) over (partition by date)) over (partition by ticker) as beta_proxy,
+        -- Fixed beta calculation (correlation with market average) - no nested window functions
+        corr(daily_return, market_avg_return) over (partition by ticker) as beta_proxy,
         
-        -- Signal summary using string_agg instead of mode()
-        string_agg(distinct ma_signal, ', ') over (partition by ticker) as dominant_ma_signal,
-        string_agg(distinct rsi_signal, ', ') over (partition by ticker) as dominant_rsi_signal,
+        -- Signal summary - get most recent signals instead of aggregating
+        first_value(ma_signal) over (partition by ticker order by date desc) as dominant_ma_signal,
+        first_value(rsi_signal) over (partition by ticker order by date desc) as dominant_rsi_signal,
         
         count(*) over (partition by ticker) as days_of_data,
         max(date) over (partition by ticker) as last_update_date,
@@ -49,8 +68,7 @@ with stock_performance as (
         -- Add row number to get one record per ticker
         row_number() over (partition by ticker order by date desc) as rn
 
-    from {{ ref('int_stock_daily_analysis') }}
-    where daily_return is not null
+    from stock_with_market
 ),
 
 crypto_performance as (
@@ -89,9 +107,9 @@ crypto_performance as (
         min(max_drawdown_90d) over (partition by symbol) as max_drawdown,
         first_value(correlation_with_btc_30d) over (partition by symbol order by date desc) as beta_proxy,
         
-        -- Signal summary
-        string_agg(distinct daily_movement_signal, ', ') over (partition by symbol) as dominant_ma_signal,
-        string_agg(distinct sentiment_signal, ', ') over (partition by symbol) as dominant_rsi_signal,
+        -- Signal summary - get most recent signals
+        first_value(daily_movement_signal) over (partition by symbol order by date desc) as dominant_ma_signal,
+        first_value(sentiment_signal) over (partition by symbol order by date desc) as dominant_rsi_signal,
         
         count(*) over (partition by symbol) as days_of_data,
         max(date) over (partition by symbol) as last_update_date,
