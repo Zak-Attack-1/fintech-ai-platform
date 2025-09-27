@@ -10,7 +10,7 @@ with asset_returns as (
         asset_type as asset_class,
         sector,
         latest_return as daily_return,
-        last_update_date as date
+        last_update_date
     from {{ ref('mart_asset_performance') }}
     where latest_return is not null
 ),
@@ -25,8 +25,7 @@ correlation_pairs as (
         a2.asset_class as asset_2_type,
         a2.sector as asset_2_sector,
         
-        -- For this simplified version, we'll use a proxy correlation
-        -- based on same-day performance similarity
+        -- Proxy correlation based on performance similarity
         case 
             when sign(a1.daily_return) = sign(a2.daily_return) then 0.5
             else -0.5
@@ -34,14 +33,14 @@ correlation_pairs as (
         
         1 as observations,
         
-        -- Simplified correlation strength
+        -- Correlation strength based on sector/asset type similarity
         case 
             when a1.sector = a2.sector and a1.asset_class = a2.asset_class then 'Significant'
             when a1.asset_class = a2.asset_class then 'Moderate'
             else 'Weak'
         end as correlation_strength,
         
-        -- Simplified relationship type
+        -- Relationship type
         case
             when sign(a1.daily_return) = sign(a2.daily_return) then 'Positive'
             else 'Negative'
@@ -50,7 +49,7 @@ correlation_pairs as (
     from asset_returns a1
     cross join asset_returns a2
     where a1.ticker != a2.ticker
-      and a1.date = a2.date
+      and a1.last_update_date = a2.last_update_date
 )
 
 select * 

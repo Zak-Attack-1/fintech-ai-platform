@@ -8,13 +8,12 @@ with asset_analysis as (
         asset_name,
         asset_type,
         sector,
-        
         latest_return as daily_return,
         current_price as close_price,
         current_volatility,
         current_rsi,
         
-        -- Simple anomaly scoring based on available data
+        -- Anomaly scoring based on available data
         case 
             when abs(latest_return) > 0.1 then abs(latest_return) * 10
             when abs(latest_return) > 0.05 then abs(latest_return) * 5  
@@ -25,7 +24,7 @@ with asset_analysis as (
         case 
             when current_volatility > 0.05 then current_volatility * 10
             when current_volatility > 0.03 then current_volatility * 5
-            else current_volatility
+            else current_volatility * 2
         end as volatility_anomaly_score,
         
         case 
@@ -40,7 +39,7 @@ with asset_analysis as (
 anomaly_classification as (
     select
         *,
-        -- Anomaly types based on thresholds
+        -- Anomaly types
         case
             when abs(daily_return) > 0.1 then 'Extreme Return'
             when abs(daily_return) > 0.05 then 'Unusual Return'
@@ -83,7 +82,7 @@ final_anomalies as (
         volatility_anomaly,
         anomaly_score,
         
-        -- Overall anomaly classification
+        -- Anomaly severity
         case
             when anomaly_score > 3 then 'Critical'
             when anomaly_score > 2 then 'High'
@@ -91,7 +90,7 @@ final_anomalies as (
             else 'Normal'
         end as anomaly_severity,
         
-        -- Combine all anomaly types into an array
+        -- Anomaly types array
         array_remove(array[
             return_anomaly,
             momentum_anomaly,

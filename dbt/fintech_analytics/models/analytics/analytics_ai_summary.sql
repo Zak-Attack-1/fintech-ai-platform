@@ -13,10 +13,10 @@ with daily_market_insights as (
             'total_assets_analyzed', count(*),
             'stock_count', count(*) filter (where asset_type = 'Stock'),
             'crypto_count', count(*) filter (where asset_type = 'Crypto'),
-            'sectors_active', count(distinct sector),
+            'sectors_active', count(distinct sector) filter (where sector is not null),
             'average_return', round(avg(latest_return)::numeric, 4),
             'market_volatility', round(stddev(latest_return)::numeric, 4),
-            'positive_assets_pct', round((sum(case when latest_return > 0 then 1 else 0 end)::float / count(*) * 100)::numeric, 1),
+            'positive_assets_pct', round((count(*) filter (where latest_return > 0)::float / count(*) * 100)::numeric, 1),
             'top_gaining_asset', (array_agg(asset_symbol order by latest_return desc))[1],
             'top_gaining_return', round((array_agg(latest_return order by latest_return desc))[1]::numeric, 4),
             'top_losing_asset', (array_agg(asset_symbol order by latest_return asc))[1],
@@ -25,15 +25,28 @@ with daily_market_insights as (
         
         -- Natural language summary
         case
-            when avg(latest_return) > 0.02 then 'Strong bull market day with ' || round((sum(case when latest_return > 0 then 1 else 0 end)::float / count(*) * 100)::numeric, 0) || '% of assets posting gains'
+            when avg(latest_return) > 0.02 then 'Strong bull market with ' || round((count(*) filter (where latest_return > 0)::float / count(*) * 100)::numeric, 0) || '% of assets posting gains'
             when avg(latest_return) > 0.005 then 'Moderate positive market with mixed performance across sectors'
-            when avg(latest_return) < -0.02 then 'Bear market day with widespread selling pressure'
+            when avg(latest_return) < -0.02 then 'Bear market with widespread selling pressure'
             when stddev(latest_return) > 0.03 then 'High volatility session with significant price swings'
-            else 'Calm trading day with modest price movements'
+            else 'Calm trading session with modest price movements'
         end as natural_language_summary
 
     from {{ ref('mart_asset_performance') }}
     where latest_return is not null
+),
+
+sector_performance_base as (
+    select
+        asset_type,
+        sector,
+        avg(latest_return) as avg_sector_return,
+        count(*) as asset_count,
+        (array_agg(asset_symbol order by latest_return desc))[1] as best_performer,
+        (array_agg(asset_symbol order by latest_return asc))[1] as worst_performer
+    from {{ ref('mart_asset_performance') }}
+    where latest_return is not null and sector is not null
+    group by asset_type, sector
 ),
 
 sector_insights as (
@@ -45,22 +58,25 @@ sector_insights as (
             json_build_object(
                 'sector', sector,
                 'asset_type', asset_type,
-                'avg_return', round(avg(latest_return)::numeric, 4),
-                'asset_count', count(*),
-                'best_performer', (array_agg(asset_symbol order by latest_return desc))[1],
-                'worst_performer', (array_agg(asset_symbol order by latest_return asc))[1]
-            ) order by avg(latest_return) desc
+                'avg_return', round(avg_sector_return::numeric, 4),
+                'asset_count', asset_count,
+                'best_performer', best_performer,
+                'worst_performer', worst_performer
+            ) order by avg_sector_return desc
         ) as insight_data,
         
         'Sector performance: ' || 
-        (array_agg(sector order by avg(latest_return) desc))[1] ||
-        ' led gains with ' ||
-        round((array_agg(avg(latest_return) order by avg(latest_return) desc))[1]::numeric * 100, 1) ||
+        coalesce((array_agg(sector order by avg_sector_return desc))[1], 'Mixed sectors') ||
+        ' showed ' ||
+        case 
+            when avg(avg_sector_return) > 0 then 'gains'
+            else 'declines' 
+        end ||
+        ' with ' ||
+        round(coalesce((array_agg(avg_sector_return order by avg_sector_return desc))[1], 0)::numeric * 100, 1) ||
         '% average return' as natural_language_summary
 
-    from {{ ref('mart_asset_performance') }}
-    where latest_return is not null and sector is not null
-    group by asset_type, sector
+    from sector_performance_base
 ),
 
 anomaly_insights as (
@@ -89,7 +105,7 @@ anomaly_insights as (
 all_insights as (
     select * from daily_market_insights
     union all
-    select * from sector_insights  
+    select * from sector_insights
     union all
     select * from anomaly_insights
 )

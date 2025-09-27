@@ -40,11 +40,7 @@ models:
     analytics:
       +materialized: table
       +schema: analytics
-      +post-hook: |
-        {% if var('create_indexes', true) %}
-          create index if not exists idx_{{ this.name }}_date on {{ this }} (date);
-          create index if not exists idx_{{ this.name }}_updated on {{ this }} (updated_at);
-        {% endif %}
+
 
 # Variables
 vars:
