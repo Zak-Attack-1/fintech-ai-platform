@@ -1,5 +1,5 @@
 """
-Natural language to SQL conversion system
+Natural language to SQL conversion system - WITH CORRECT SCHEMAS
 File: src/ai/nl_to_sql.py
 """
 import sqlparse
@@ -139,7 +139,7 @@ class NaturalLanguageSQL:
                     if 'return' in query_lower or 'performance' in query_lower:
                         return f"""
                         SELECT asset_symbol, asset_name, total_return, sharpe_ratio, sector
-                        FROM mart_asset_performance
+                        FROM public_marts.mart_asset_performance
                         WHERE asset_type = 'stock'
                         ORDER BY total_return DESC
                         LIMIT {limit}
@@ -147,24 +147,24 @@ class NaturalLanguageSQL:
                     elif 'volatil' in query_lower:
                         return f"""
                         SELECT ticker, company_name, volatility_20d, daily_return, sector
-                        FROM int_stock_daily_analysis
-                        WHERE date = (SELECT MAX(date) FROM int_stock_daily_analysis)
+                        FROM public_intermediate.int_stock_daily_analysis
+                        WHERE date = (SELECT MAX(date) FROM public_intermediate.int_stock_daily_analysis)
                         ORDER BY volatility_20d DESC
                         LIMIT {limit}
                         """
                     elif 'volume' in query_lower:
                         return f"""
                         SELECT ticker, company_name, volume, close_price, daily_return
-                        FROM int_stock_daily_analysis
-                        WHERE date = (SELECT MAX(date) FROM int_stock_daily_analysis)
+                        FROM public_intermediate.int_stock_daily_analysis
+                        WHERE date = (SELECT MAX(date) FROM public_intermediate.int_stock_daily_analysis)
                         ORDER BY volume DESC
                         LIMIT {limit}
                         """
                 else:
                     return """
                     SELECT ticker, company_name, close_price, daily_return, sector
-                    FROM int_stock_daily_analysis
-                    WHERE date = (SELECT MAX(date) FROM int_stock_daily_analysis)
+                    FROM public_intermediate.int_stock_daily_analysis
+                    WHERE date = (SELECT MAX(date) FROM public_intermediate.int_stock_daily_analysis)
                     ORDER BY ticker
                     LIMIT 20
                     """
@@ -175,16 +175,16 @@ class NaturalLanguageSQL:
                     limit = self._extract_number(query, default=10)
                     return f"""
                     SELECT symbol, name, price_usd, daily_return, volume_24h
-                    FROM int_crypto_analysis
-                    WHERE date = (SELECT MAX(date) FROM int_crypto_analysis)
+                    FROM public_intermediate.int_crypto_analysis
+                    WHERE date = (SELECT MAX(date) FROM public_intermediate.int_crypto_analysis)
                     ORDER BY daily_return DESC
                     LIMIT {limit}
                     """
                 else:
                     return """
                     SELECT symbol, name, price_usd, daily_return, ma_7d, ma_30d
-                    FROM int_crypto_analysis
-                    WHERE date = (SELECT MAX(date) FROM int_crypto_analysis)
+                    FROM public_intermediate.int_crypto_analysis
+                    WHERE date = (SELECT MAX(date) FROM public_intermediate.int_crypto_analysis)
                     ORDER BY symbol
                     LIMIT 20
                     """
@@ -199,7 +199,7 @@ class NaturalLanguageSQL:
                            AVG(total_return) as avg_return,
                            AVG(volatility) as avg_volatility,
                            COUNT(*) as num_assets
-                    FROM mart_asset_performance
+                    FROM public_marts.mart_asset_performance
                     WHERE asset_type = 'stock' AND sector IS NOT NULL
                     GROUP BY sector
                     ORDER BY avg_return DESC
@@ -210,7 +210,7 @@ class NaturalLanguageSQL:
                            AVG(total_return) as avg_return,
                            AVG(volatility) as avg_volatility,
                            COUNT(*) as num_assets
-                    FROM mart_asset_performance
+                    FROM public_marts.mart_asset_performance
                     GROUP BY asset_type
                     ORDER BY avg_return DESC
                     """
@@ -222,7 +222,7 @@ class NaturalLanguageSQL:
                            AVG(volatility) as avg_volatility,
                            MAX(volatility) as max_volatility,
                            MIN(volatility) as min_volatility
-                    FROM mart_asset_performance
+                    FROM public_marts.mart_asset_performance
                     WHERE asset_type = 'stock' AND sector IS NOT NULL
                     GROUP BY sector
                     ORDER BY avg_volatility DESC
@@ -239,7 +239,7 @@ class NaturalLanguageSQL:
                 return f"""
                 SELECT asset_symbol, asset_name, total_return, 
                        annualized_return, sharpe_ratio, volatility
-                FROM mart_asset_performance
+                FROM public_marts.mart_asset_performance
                 WHERE LOWER(asset_symbol) IN ('{assets_list}')
                    OR LOWER(asset_name) IN ('{assets_list}')
                 ORDER BY total_return DESC
@@ -251,7 +251,7 @@ class NaturalLanguageSQL:
                        AVG(total_return) as avg_return,
                        AVG(sharpe_ratio) as avg_sharpe,
                        AVG(volatility) as avg_volatility
-                FROM mart_asset_performance
+                FROM public_marts.mart_asset_performance
                 GROUP BY asset_type
                 ORDER BY avg_return DESC
                 """
@@ -265,7 +265,7 @@ class NaturalLanguageSQL:
                 return f"""
                 SELECT date, asset_class, avg_return, 
                        return_volatility, market_regime
-                FROM mart_daily_market_summary
+                FROM public_marts.mart_daily_market_summary
                 WHERE date >= CURRENT_DATE - INTERVAL '{days} days'
                 ORDER BY date DESC, asset_class
                 """
@@ -276,7 +276,7 @@ class NaturalLanguageSQL:
             return """
             SELECT asset_name, date, daily_return, volume,
                    return_z_score, anomaly_type
-            FROM analytics_market_anomalies
+            FROM public_analytics.analytics_market_anomalies
             WHERE ABS(return_z_score) > 2
             ORDER BY date DESC, ABS(return_z_score) DESC
             LIMIT 20

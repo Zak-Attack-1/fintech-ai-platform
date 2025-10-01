@@ -58,7 +58,7 @@ class SchemaManager:
                 }
             },
             'intermediate': {
-                'int_stock_daily_analysis': {
+                'public_intermediate.int_stock_daily_analysis': {
                     'description': 'Daily stock analysis with technical indicators',
                     'columns': {
                         'ticker': 'Stock ticker',
