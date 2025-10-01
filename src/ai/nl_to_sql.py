@@ -197,7 +197,7 @@ class NaturalLanguageSQL:
                     return """
                     SELECT sector, 
                            AVG(total_return) as avg_return,
-                           AVG(volatility) as avg_volatility,
+                           AVG(annualized_volatility) as avg_volatility,
                            COUNT(*) as num_assets
                     FROM public_marts.mart_asset_performance
                     WHERE asset_type = 'stock' AND sector IS NOT NULL
@@ -219,9 +219,9 @@ class NaturalLanguageSQL:
                 if 'sector' in query_lower:
                     return """
                     SELECT sector,
-                           AVG(volatility) as avg_volatility,
-                           MAX(volatility) as max_volatility,
-                           MIN(volatility) as min_volatility
+                           AVG(annualized_volatility) as avg_volatility,
+                           MAX(annualized_volatility) as max_volatility,
+                           MIN(annualized_volatility) as min_volatility
                     FROM public_marts.mart_asset_performance
                     WHERE asset_type = 'stock' AND sector IS NOT NULL
                     GROUP BY sector
@@ -238,7 +238,7 @@ class NaturalLanguageSQL:
                 assets_list = "', '".join(assets)
                 return f"""
                 SELECT asset_symbol, asset_name, total_return, 
-                       annualized_return, sharpe_ratio, volatility
+                       annualized_return, sharpe_ratio, annualized_volatility
                 FROM public_marts.mart_asset_performance
                 WHERE LOWER(asset_symbol) IN ('{assets_list}')
                    OR LOWER(asset_name) IN ('{assets_list}')
@@ -271,7 +271,7 @@ class NaturalLanguageSQL:
                 """
         
         # Anomaly detection
-        elif intent == 'anomaly_detection' or 'anomaly' in query_lower or 'unusual' in query_lower or 'outlier' in query_lower:
+        elif intent == 'anomaly_detection' or 'anomaly' in query_lower or 'anomal' in query_lower or 'unusual' in query_lower or 'outlier' in query_lower or 'recent' in query_lower and 'market' in query_lower:
             
             return """
             SELECT asset_name, date, daily_return, volume,
