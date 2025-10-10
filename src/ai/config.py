@@ -14,9 +14,15 @@ load_dotenv()
 class AIConfig:
     """Configuration for AI services"""
     
-    # Hugging Face API (30,000 free requests/month)
+    # Hugging Face API (Rate limited on free tier)
+    # Note: Only "warm" models work on free tier
+    # See: https://huggingface.co/models?inference=warm&sort=trending
     hf_api_key: str = os.getenv("HF_API_KEY", "")
-    hf_model: str = "mistralai/Mixtral-8x7B-Instruct-v0.1"
+    hf_model: str = "microsoft/Phi-3-mini-4k-instruct"  # Free warm model
+    # Alternative free models:
+    # - "google/flan-t5-base" (smaller, faster)
+    # - "facebook/opt-350m" (very small)
+    # - "gpt2" (classic, always warm)
     
     # Local CPU models
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"

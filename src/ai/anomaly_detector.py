@@ -32,13 +32,14 @@ class AnomalyDetector:
         logger.info(f"Detecting anomalies from last {days} days")
         
         # Query anomalies from database
+        # Note: Column names may vary - adjust based on your actual schema
         query = f"""
-        SELECT asset_name, date, daily_return, volume,
-               return_z_score, volume_z_score, anomaly_type
+        SELECT asset_name, asset_id, date, daily_return, anomaly_type,
+               anomaly_score, price_change_pct
         FROM public_analytics.analytics_market_anomalies
         WHERE date >= CURRENT_DATE - INTERVAL '{days} days'
-          AND ABS(return_z_score) > {self.anomaly_threshold}
-        ORDER BY date DESC, ABS(return_z_score) DESC
+          AND ABS(anomaly_score) > {self.anomaly_threshold}
+        ORDER BY date DESC, ABS(anomaly_score) DESC
         LIMIT 50
         """
         
@@ -84,7 +85,12 @@ class AnomalyDetector:
         classified = []
         
         for anomaly in anomalies:
-            z_score = abs(float(anomaly.get('return_z_score', 0)))
+            # Use anomaly_score if available, otherwise fall back to daily_return
+            z_score = abs(float(anomaly.get('anomaly_score', 0)))
+            if z_score == 0:
+                # Fallback: estimate from daily_return
+                daily_return = abs(float(anomaly.get('daily_return', 0)))
+                z_score = daily_return * 100  # Rough approximation
             
             # Determine severity
             if z_score >= 4.0:
